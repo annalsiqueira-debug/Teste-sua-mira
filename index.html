@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teste sua mira</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#151515;color:#fff;font-family:Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:12px}.wrap{width:min(1280px,100%)}.hint{text-align:center;margin:0 0 10px;font-size:14px;color:#eee}canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#1648ff;cursor:none;border:2px solid #222;touch-action:manipulation} .controls{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:10px}.controls button{border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:bold;cursor:pointer;background:#fff;color:#111}.controls button:hover{opacity:.85}
+</style></head>
+<body><main class="wrap"><p class="hint">Clique nos cogumelos para acertar 20 vezes. Aperte R para reiniciar.</p><canvas id="game" width="1280" height="720" aria-label="Jogo Teste sua mira"></canvas><div class="controls"><button id="soundBtn">🔊 Som: ligado</button><button id="restartBtn">Reiniciar (R)</button></div></main>
+<audio id="shot" src="som_tiro.mp3" preload="auto"></audio><audio id="music" src="somdefundo-mario.mp3" loop preload="auto"></audio>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const shot=document.getElementById('shot'),music=document.getElementById('music');
+const W=1280,H=720,MAX=20;
+const bg=new Image(),targetImg=new Image(),aimImg=new Image();
+bg.src='cenario-mario.jpg';targetImg.src='cogumelo.png';aimImg.src='mira.png';
+let count=MAX,x=0,y=120,dir=1,speed=15,mx=W/2,my=H/2,started=false,muted=false,finished=false;
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function place(){dir=Math.random()<.5?-1:1;speed=rand(8,25);x=dir===1?-80:W;y=rand(50,H-80)}
+function startAudio(){if(started)return;started=true;if(!muted){music.volume=.3;music.play().catch(()=>{});}}
+function restart(){count=MAX;finished=false;place();}
+function pointer(e){const r=canvas.getBoundingClientRect();mx=(e.clientX-r.left)*W/r.width;my=(e.clientY-r.top)*H/r.height;}
+canvas.addEventListener('pointermove',pointer);
+canvas.addEventListener('pointerdown',e=>{pointer(e);startAudio();if(finished)return;if(!muted){shot.currentTime=0;shot.volume=.8;shot.play().catch(()=>{});}if(mx>=x&&mx<=x+80&&my>=y&&my<=y+80){count--;if(count<=0){count=0;finished=true;}}});
+document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='r')restart();if(e.key==='Escape'){} });
+document.getElementById('restartBtn').addEventListener('click',restart);
+document.getElementById('soundBtn').addEventListener('click',()=>{muted=!muted;document.getElementById('soundBtn').textContent=muted?'🔇 Som: desligado':'🔊 Som: ligado';if(muted){music.pause();shot.pause()}else if(started)music.play().catch(()=>{});});
+function draw(){ctx.clearRect(0,0,W,H);if(bg.complete&&bg.naturalWidth)ctx.drawImage(bg,0,0,W,H);else{ctx.fillStyle='#1648ff';ctx.fillRect(0,0,W,H)}
+if(!finished){x+=dir*speed;if(x<-80||x>W){place();}}
+if(targetImg.complete&&targetImg.naturalWidth&&!finished)ctx.drawImage(targetImg,x,y,80,80);
+// Barra de vida/objetivo
+ctx.fillStyle='#000';ctx.fillRect(465,0,350,45);ctx.fillStyle='#fff';ctx.fillRect(470,5,340,35);ctx.fillStyle='#f00';ctx.fillRect(470,5,340*(count/MAX),35);
+ctx.fillStyle='#f00';ctx.fillRect(W-110,0,110,45);ctx.fillStyle='#fff';ctx.font='bold 28px Arial';ctx.fillText('SAIR',W-91,31);
+if(mx>=W-110&&my<=45){/* hover feedback only */}
+if(finished){ctx.fillStyle='rgba(255,255,255,.88)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#000';ctx.textAlign='center';ctx.font='bold 76px Arial';ctx.fillText('Você venceu!',W/2,H/2);ctx.font='bold 38px Arial';ctx.fillText('Aperte R ou Reiniciar para jogar novamente.',W/2,H/2+65);ctx.textAlign='left';}
+if(aimImg.complete&&aimImg.naturalWidth){ctx.drawImage(aimImg,mx-20,my-20,40,40)}else{ctx.strokeStyle='#000';ctx.lineWidth=4;ctx.beginPath();ctx.arc(mx,my,15,0,Math.PI*2);ctx.moveTo(mx-22,my);ctx.lineTo(mx+22,my);ctx.moveTo(mx,my-22);ctx.lineTo(mx,my+22);ctx.stroke()}
+requestAnimationFrame(draw)}
+// SAIR: web pages cannot close themselves reliably, so show an exit message.
+canvas.addEventListener('click',e=>{const r=canvas.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width,py=(e.clientY-r.top)*H/r.height;if(px>=W-110&&py<=45){finished=true;ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#000';ctx.textAlign='center';ctx.font='bold 56px Arial';ctx.fillText('Você pode fechar esta aba.',W/2,H/2);ctx.textAlign='left';}});
+place();draw();
+})();
+</script></body></html>
